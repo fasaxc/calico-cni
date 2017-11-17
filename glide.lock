@@ -1,5 +1,5 @@
 hash: 763c4b518adb1d75e468e8235ee56f039afdf82a7f21bd0239c42f1cab83e587
-updated: 2017-11-16T16:56:26.784317665-08:00
+updated: 2017-11-17T11:36:43.214526939Z
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -226,7 +226,7 @@ imports:
   subpackages:
   - prometheus
 - name: github.com/prometheus/client_model
-  version: 6f3806018612930941127f2a7c6c453ba2c527d2
+  version: 99fa1f4be8e564e8a6b613da7fa6f46c9edafc6c
   subpackages:
   - go
 - name: github.com/prometheus/common
