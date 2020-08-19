@@ -461,7 +461,7 @@ func CmdAddK8s(ctx context.Context, args *skel.CmdArgs, conf types.NetConf, epID
 // As such, we must only delete the workload endpoint when the provided CNI_CONATAINERID matches the value on the WorkloadEndpoint. If they do not match,
 // it means the DEL is for an old sandbox and the pod is still running. We should still clean up IPAM allocations, since they are identified by the
 // container ID rather than the pod name and namespace. If they do match, then we can delete the workload endpoint.
-func CmdDelK8s(ctx context.Context, c calicoclient.Interface, epIDs utils.WEPIdentifiers, args *skel.CmdArgs, conf types.NetConf, logger *logrus.Entry) error {
+func CmdDelK8s(ctx context.Context, c calicoclient.Interface, epIDs utils.WEPIdentifiers, args *skel.CmdArgs, conf types.NetConf, logger *logrus.Entry) (err error) {
 	d, err := dataplane.GetDataplane(conf, logger)
 	if err != nil {
 		return err
@@ -529,6 +529,17 @@ func CmdDelK8s(ctx context.Context, c calicoclient.Interface, epIDs utils.WEPIde
 		break
 	}
 
+	defer func() {
+		// Release the IP address for this container by calling the configured IPAM plugin.
+		logger.Info("Releasing IP address(es)")
+		ipamErr := utils.DeleteIPAM(conf, args, logger)
+		if ipamErr != nil {
+			logger.WithError(ipamErr).Info("IPAM cleanup failed.")
+			err = ipamErr
+		}
+		logger.Info("Teardown processing complete.")
+	}()
+
 	// Clean up namespace by removing the interfaces.
 	logger.Info("Cleaning up netns")
 	err = d.CleanUpNamespace(args)
@@ -536,14 +547,10 @@ func CmdDelK8s(ctx context.Context, c calicoclient.Interface, epIDs utils.WEPIde
 		return err
 	}
 
-	// Release the IP address for this container by calling the configured IPAM plugin.
-	logger.Info("Releasing IP address(es)")
-	err = utils.DeleteIPAM(conf, args, logger)
-	if err != nil {
-		return err
-	}
+	logger.Info("Sleeping before releasing IPs...")
+	time.Sleep(10 * time.Second)
+	logger.Info("Woke up, about to release IPs")
 
-	logger.Info("Teardown processing complete.")
 	return nil
 }
 
